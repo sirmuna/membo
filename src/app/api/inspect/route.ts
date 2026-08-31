@@ -11,17 +11,13 @@ export async function GET() {
     "organisation_memberships",
     "organisation_join_requests",
     "organisation_invitations",
-    "ownership_transfers"
+    "ownership_transfers",
   ];
 
   for (const table of tables) {
     try {
       // Query database schema information_schema directly
       const { data, error } = await supabase
-        .from("pg_catalog") // Wait, or we can use custom sql? Supabase Client doesn't let us query pg_catalog or information_schema unless they are exposed in the REST API (which they aren't by default).
-        // Let's use options or the error hack! 
-        // If we query an invalid column, Postgres returns an error listing the available columns, or we can select a nonexistent column like `select("nonexistent_column")` and get the list of columns in the error message!
-        // This is a brilliant, reliable, zero-config way to inspect columns of empty tables.
         .from(table)
         .select("nonexistent_column_for_inspection")
         .limit(1);
@@ -32,7 +28,7 @@ export async function GET() {
         results[table] = {
           message: error.message,
           hint: error.hint,
-          details: error.details
+          details: error.details,
         };
       } else {
         results[table] = { data };

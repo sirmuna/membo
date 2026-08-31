@@ -29,7 +29,7 @@ interface Member {
   user_id: string;
   joined_at: string;
   status: string;
-  role_id: string;
+  role_id: string | null;
   profiles?: Profile | null;
   roles?: Role | null;
 }
@@ -301,7 +301,8 @@ export function MembersTab({
               user_id,
               first_name,
               last_name,
-              status
+              status,
+              created_at
             `,
           )
           .eq("organisation_id", organisationId),

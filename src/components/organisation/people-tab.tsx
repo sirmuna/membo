@@ -55,6 +55,7 @@ function PeopleTabSkeleton({ canManage }: { canManage: boolean }) {
 interface Person {
   id: string;
   organisation_id: string;
+  user_id: string | null;
   first_name: string;
   last_name: string;
   email: string | null;

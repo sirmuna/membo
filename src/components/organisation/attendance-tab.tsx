@@ -387,13 +387,9 @@ export function AttendanceTab({
             : undefined;
 
           const group =
-            Array.isArray(session.group) && session.group[0]
+            session.group && session.group[0]
               ? { name: String(session.group[0].name) }
-              : session.group
-                ? {
-                    name: String((session.group as { name: string }).name),
-                  }
-                : undefined;
+              : undefined;
 
           if (attendanceType === "count") {
             const categories = categoriesBySession.get(session.id) ?? [];
@@ -491,7 +487,19 @@ export function AttendanceTab({
   }, [organisationId, notify, supabase]);
 
   useEffect(() => {
-    void fetchData();
+    let cancelled = false;
+
+    const run = async () => {
+      if (cancelled) return;
+
+      await fetchData();
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [fetchData]);
 
   // ============================================================
