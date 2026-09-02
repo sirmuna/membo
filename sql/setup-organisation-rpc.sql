@@ -66,7 +66,6 @@ BEGIN
     role_id,
     status,
     joined_at,
-    created_at,
     updated_at
   )
   VALUES (
@@ -74,7 +73,6 @@ BEGIN
     v_user_id,
     v_owner_role_id,
     'active',
-    NOW(),
     NOW(),
     NOW()
   );

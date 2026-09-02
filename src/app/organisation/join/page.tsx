@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 export default function JoinOrganisationPage() {
@@ -263,12 +264,12 @@ export default function JoinOrganisationPage() {
           )}
 
           <div className="mt-6 text-center">
-            <button
-              onClick={() => router.push("/dashboard")}
+            <Link
+              href="/dashboard"
               className="text-sm font-semibold text-[var(--primary)] hover:underline cursor-pointer"
             >
               Back to Dashboard
-            </button>
+            </Link>
           </div>
         </div>
       </div>

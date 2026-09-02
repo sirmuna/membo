@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ToastContainer } from "@/components/toast";
 import { SidebarSwitcher } from "@/components/layout/sidebar-switcher";
+import { Footer } from "@/components/layout/footer";
 
 const navItems = [
   {
@@ -651,6 +652,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
+      <Footer />
       <ToastContainer />
     </div>
   );
