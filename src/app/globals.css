@@ -1,19 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  /* MEMBO Brand Colors - extracted from logo */
-  --primary: #4f46e5;
-  --primary-dark: #4338ca;
-  --primary-light: #6366f1;
-  --secondary: #7c3aed;
-  --accent: #8b5cf6;
+  /* MEMBO Brand Colors */
+  --primary: #8b5cf6;
+  --primary-dark: #7c3aed;
+  --primary-light: #a78bfa;
+  --primary-faint: #8B5CF6/10;
+  --primary-faint-20: #8B5CF6/20;
 
-  /* Neutral Colors */
-  --background: #f9fafb;
+  /* Background Colors */
+  --background: #0d0a1a;
+  --background-light: #1a1625;
   --surface: #ffffff;
-  --foreground: #111827;
-  --muted: #6b7280;
-  --border: #e5e7eb;
+  --surface-dark: rgba(255, 255, 255, 0.05);
+  --surface-darker: rgba(255, 255, 255, 0.03);
+
+  /* Text Colors */
+  --foreground: #ffffff;
+  --foreground-secondary: #e8e5f2;
+  --foreground-muted: #aaa5ba;
+  --foreground-faint: rgba(255, 255, 255, 0.3);
+  --foreground-fainter: rgba(255, 255, 255, 0.4);
+
+  /* Border Colors */
+  --border: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.05);
 
   /* Semantic Colors */
   --success: #10b981;

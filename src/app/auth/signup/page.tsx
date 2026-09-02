@@ -51,7 +51,7 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="flex min-h-screen bg-[#0D0A1A]">
+    <main className="flex min-h-screen bg-(--background)">
       <style>{`
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
@@ -168,14 +168,14 @@ export default function SignupPage() {
                 I agree to MEMBO&apos;s{" "}
                 <Link
                   href="/legal/terms"
-                  className="font-medium text-[#A78BFA] hover:text-white transition-colors"
+                  className="font-medium text-(--primary-light) hover:text-white transition-colors"
                 >
                   Terms of Service
                 </Link>{" "}
                 and{" "}
                 <Link
                   href="/legal/privacy"
-                  className="font-medium text-[#A78BFA] hover:text-white transition-colors"
+                  className="font-medium text-(--primary-light) hover:text-white transition-colors"
                 >
                   Privacy Policy
                 </Link>
@@ -197,7 +197,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#8B5CF6] px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#9B6AF7] hover:shadow-[0_12px_35px_-12px_rgba(139,92,246,0.6)] focus:outline-none focus:ring-4 focus:ring-[#8B5CF6]/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-(--primary-light) hover:shadow-[0_12px_35px_-12px_rgba(139,92,246,0.6)] focus:outline-none focus:ring-4 focus:ring-(--primary)/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Creating account..." : "Create account"}
             </button>
@@ -219,7 +219,7 @@ export default function SignupPage() {
         </div>
       </section>
 
-      <aside className="relative hidden overflow-hidden bg-[#0D0A1A] lg:flex lg:w-[52%]">
+      <aside className="relative hidden overflow-hidden bg-(--background) lg:flex lg:w-[52%]">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.055]"
           style={{
@@ -236,7 +236,7 @@ export default function SignupPage() {
         />
 
         <div
-          className="pointer-events-none absolute -bottom-40 -left-40 h-125 w-125 rounded-full bg-[#8B5CF6]/10 blur-[130px]"
+          className="pointer-events-none absolute -bottom-40 -left-40 h-125 w-125 rounded-full bg-(--primary)/10 blur-[130px]"
           aria-hidden="true"
         />
 
@@ -248,7 +248,7 @@ export default function SignupPage() {
         <div className="relative flex h-full w-full flex-col justify-between px-14 py-14 xl:px-20 xl:py-16">
           <div className="flex justify-end">
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#A78BFA]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-(--primary-light)" />
               <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/35">
                 Get Started
               </span>
@@ -256,7 +256,7 @@ export default function SignupPage() {
           </div>
 
           <div className="max-w-xl">
-            <div className="mb-7 h-px w-12 bg-[#A78BFA]" />
+            <div className="mb-7 h-px w-12 bg-(--primary-light)" />
             <h2 className="font-serif text-[42px] font-semibold leading-[1.08] tracking-tight text-white xl:text-[54px]">
               Start managing your organisation today.
             </h2>

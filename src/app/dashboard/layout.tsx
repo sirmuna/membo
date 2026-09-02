@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ToastContainer } from "@/components/toast";
 import { SidebarSwitcher } from "@/components/layout/sidebar-switcher";
 import { Footer } from "@/components/layout/footer";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 const navItems = [
   {
@@ -90,6 +91,7 @@ export default function DashboardLayout({
   );
   const [orgExpanded, setOrgExpanded] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [showSignoutDialog, setShowSignoutDialog] = useState(false);
 
   useEffect(() => {
     // Start loading progress immediately on pathname change
@@ -210,7 +212,12 @@ export default function DashboardLayout({
   async function handleSignOut() {
     if (signingOut) return;
 
+    setShowSignoutDialog(true);
+  }
+
+  async function confirmSignOut() {
     setSigningOut(true);
+    setShowSignoutDialog(false);
 
     const supabase = createClient();
 
@@ -224,6 +231,10 @@ export default function DashboardLayout({
 
     router.replace("/auth/login");
     router.refresh();
+  }
+
+  function cancelSignOut() {
+    setShowSignoutDialog(false);
   }
 
   const handleMouseEnter = (
@@ -654,6 +665,16 @@ export default function DashboardLayout({
 
       <Footer />
       <ToastContainer />
+
+      <ConfirmDialog
+        isOpen={showSignoutDialog}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your account?"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        onConfirm={confirmSignOut}
+        onCancel={cancelSignOut}
+      />
     </div>
   );
 }
