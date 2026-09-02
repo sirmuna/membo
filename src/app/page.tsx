@@ -16,10 +16,10 @@ import {
 /* -------------------------------------------------------------------------- */
 
 const ROLL_CALL_ROWS = [
-  { name: "Adaeze Okonkwo", role: "Leader" },
+  { name: "David Muna", role: "Leader" },
   { name: "Austin King", role: "Usher" },
   { name: "Michael Godfrey", role: "Member" },
-  { name: "Peace Okafor", role: "Member" },
+  { name: "Shedrack Ibrahim", role: "Member" },
   { name: "Frank Emmanuel", role: "Group Leader" },
   { name: "Joshua Peter", role: "Member" },
 ];
@@ -249,9 +249,7 @@ function Reveal({
 
     if (!node) return;
 
-    const mediaQuery = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     if (mediaQuery.matches) {
       return;
@@ -281,9 +279,7 @@ function Reveal({
     <Component
       ref={ref}
       className={`transition-all duration-700 ease-out ${
-        visible
-          ? "translate-y-0 opacity-100"
-          : "translate-y-4 opacity-0"
+        visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
       } ${className}`}
       style={{
         transitionDelay: visible ? `${delay}ms` : "0ms",
@@ -487,7 +483,7 @@ function Hero({ presentCount, totalRows }: HeroProps) {
 
           <p className="mt-7 max-w-2xl text-[17px] leading-8 text-[#AAA5BA] sm:text-lg">
             MEMBO brings your people, groups, attendance, and organisational
-            activities into one structured workspace — so your organisation can
+            activities into one structured workspace, so your organisation can
             spend less time managing records and more time doing the work that
             matters.
           </p>
@@ -630,7 +626,6 @@ function Hero({ presentCount, totalRows }: HeroProps) {
                   </li>
                 );
               })}
-              
             </ul>
 
             <div className="mt-4">
@@ -720,9 +715,9 @@ function Audience() {
             </span>
 
             <h2 className="membo-display mt-4 max-w-xl text-3xl font-bold leading-tight tracking-[-0.03em] text-white sm:text-4xl">
-              Built for organisations.
+              Membo is built for 
               <span className="block text-[#A78BFA]">
-                Starting with churches.
+                For Organisations.
               </span>
             </h2>
           </Reveal>
@@ -1026,8 +1021,7 @@ function Footer() {
 
             <p className="mt-5 text-sm leading-7 text-[#756E82]">
               A structured workspace for managing people, groups, attendance,
-              and organisational activities — built for organisations, starting
-              with churches.
+              and organisational activities, built for organisations.
             </p>
 
             {/* NOTE: update href to your real MUNACORE URL — munacore.com is a placeholder */}
