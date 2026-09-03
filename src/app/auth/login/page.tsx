@@ -1,11 +1,12 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PasswordInput } from "@/components/password-input";
+import { Preloader } from "@/components/preloader";
 
 const supabase = createClient();
 
@@ -91,15 +92,8 @@ export default function LoginPage() {
     }
   }
 
-  if (checkingSession) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-(--background)">
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-2 border-white/10 border-t-(--primary)"
-          aria-label="Checking session"
-        />
-      </main>
-    );
+  if (checkingSession || loading) {
+    return <Preloader />;
   }
 
   return (

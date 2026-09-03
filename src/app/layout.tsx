@@ -30,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
+      style={{ backgroundColor: "#0D0A1A" }}
     >
       <head>
         <script
@@ -48,7 +49,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col">
+      <body
+        className="min-h-full flex flex-col"
+        style={{ backgroundColor: "#0D0A1A" }}
+      >
         <Preloader />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
