@@ -528,7 +528,7 @@ function Hero({
           <div className="inline-flex items-center gap-2 rounded-full border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 px-3 py-1 text-xs text-[#C4B5FD]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
             <span className="membo-mono text-[11px] font-semibold uppercase tracking-[0.14em]">
-              Your organisation&apos;s database
+              Organisation & Member Management
             </span>
           </div>
 
@@ -539,8 +539,9 @@ function Hero({
           </h1>
 
           <p className="mt-6 max-w-2xl text-[17px] leading-8 text-[#AAA5BA] sm:text-lg">
-            The clean, all-in-one workspace for churches, clubs, and communities.
-            Know who showed up, follow up with absent members, and manage rosters — in seconds, not hours.
+            Membo is the simple workspace for organisations that meet regularly.
+            Replace paper registers and scattered WhatsApp lists with one place
+            to manage people, groups, and attendance.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3.5">
@@ -566,11 +567,13 @@ function Hero({
             </span>
 
             <span className="flex items-center gap-1.5">
-              <span className="text-[#10B981] font-bold">✓</span> Phone &amp; laptop ready
+              <span className="text-[#10B981] font-bold">✓</span> Phone &amp;
+              laptop ready
             </span>
 
             <span className="flex items-center gap-1.5">
-              <span className="text-[#10B981] font-bold">✓</span> No credit card required
+              <span className="text-[#10B981] font-bold">✓</span> No credit card
+              required
             </span>
           </div>
         </Reveal>
@@ -609,7 +612,9 @@ function Hero({
             </div>
 
             <div className="mt-4 flex items-center justify-between border-t border-white/7 pt-3">
-              <span className="text-xs text-[#8B849D]">{totalRows} assigned members</span>
+              <span className="text-xs text-[#8B849D]">
+                {totalRows} assigned members
+              </span>
               <span className="text-xs font-semibold text-[#A78BFA]">
                 Active Roll Call
               </span>
@@ -641,11 +646,14 @@ function Hero({
               <div className="text-right">
                 <p className="membo-mono text-2xl font-bold tabular-nums text-[#171326]">
                   {presentCount}
-                  <span className="text-xs font-normal text-slate-400">/{totalRows}</span>
+                  <span className="text-xs font-normal text-slate-400">
+                    /{totalRows}
+                  </span>
                 </p>
 
                 <p className="membo-mono text-[9px] uppercase tracking-[0.12em] text-[#8B849D]">
-                  {lateCount > 0 ? `${lateCount} Late · ` : ""}{absentCount} Absent
+                  {lateCount > 0 ? `${lateCount} Late · ` : ""}
+                  {absentCount} Absent
                 </p>
               </div>
             </div>
