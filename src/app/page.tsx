@@ -26,69 +26,69 @@ const ROLL_CALL_ROWS = [
 
 const FEATURES = [
   {
-    icon: PeopleIcon,
-    eyebrow: "People",
-    title: "People & Membership",
+    icon: AttendanceIcon,
+    eyebrow: "Roll-Call",
+    title: "1-Click Attendance",
     description:
-      "Keep member profiles, memberships, and organisational records organised in one central workspace.",
+      "Take attendance on your phone in under 60 seconds. Track individual members or record headcount for large services.",
   },
   {
-    icon: AttendanceIcon,
-    eyebrow: "Attendance",
-    title: "Attendance Management",
+    icon: PeopleIcon,
+    eyebrow: "Directory",
+    title: "Member Profiles",
     description:
-      "Record attendance quickly and understand participation across services, meetings, groups, and activities.",
+      "Keep phone numbers, emails, birthdays, and membership history in one clean, searchable directory.",
   },
   {
     icon: GroupsIcon,
-    eyebrow: "Structure",
-    title: "Groups & Organisation",
+    eyebrow: "Teams",
+    title: "Groups & Departments",
     description:
-      "Create groups, assign leaders, manage memberships, and reflect the way your organisation actually works.",
+      "Organize your choir, ushers, youth, or committee. Assign leaders and keep team rosters up to date.",
   },
   {
     icon: DashboardIcon,
-    eyebrow: "Access",
-    title: "Role-Based Workspaces",
+    eyebrow: "Security",
+    title: "Role Permissions",
     description:
-      "Give leaders, managers, and members the information and tools relevant to their role.",
+      "Keep sensitive data secure. Leaders manage records; members see their own groups and attendance history.",
   },
 ];
 
 const AUDIENCE = [
   "Churches",
-  "Ministries",
+  "Fellowships",
+  "Community Groups",
+  "Sports Clubs",
   "Non-profits",
   "Associations",
-  "Clubs",
-  "Community groups",
 ];
 
 const ROLE_VIEWS = {
   leader: {
-    label: "Leader",
-    heading: "See the organisation clearly.",
+    label: "Leader & Admin",
+    heading: "Total clarity across every department.",
     description:
-      "Leaders get the oversight they need without having to dig through spreadsheets, paper records, or disconnected tools.",
+      "See who attended, who was late, and who needs a follow-up — without digging through paper sheets or spreadsheets.",
     items: [
-      "Monitor attendance across groups and services",
-      "Manage people and membership records",
-      "Create and organise groups",
-      "Manage group leaders and access",
-      "Send relevant organisational notifications",
+      "1-click roll call across all weekly meetings",
+      "Searchable member directory with phone numbers",
+      "Create groups and assign department leaders",
+      "Track attendance trends and follow-up lists",
+      "Role-based access to keep private records secure",
     ],
   },
   member: {
     label: "Member",
-    heading: "Everything you need. Nothing you don't.",
+    heading: "Everything you need, zero clutter.",
     description:
-      "Members get a focused workspace built around their participation, groups, attendance, and organisational updates.",
+      "Members get a private view of their own attendance history, group rosters, and upcoming meetings.",
     items: [
-      "View your organisation and group memberships",
-      "Track your attendance history",
-      "Access relevant organisational information",
-      "Receive notifications and group updates",
-      "Keep selected personal information current",
+      "View your personal attendance history",
+      "See group rosters and leader contacts",
+      "Update your phone number and profile info",
+      "View upcoming service and meeting dates",
+      "Direct announcements without spam",
     ],
   },
 } as const;
@@ -106,40 +106,72 @@ const AUTH_SIGNUP_PATH = "/auth/login?intent=signup";
 export default function LandingPage() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [roleView, setRoleView] = useState<RoleView>("leader");
-  const [presentCount, setPresentCount] = useState(0);
 
-  const totalRows = ROLL_CALL_ROWS.length;
+  const [checkedStatus, setCheckedStatus] = useState<
+    Record<string, "present" | "late" | "absent">
+  >({
+    "David Muna": "present",
+    "Austin King": "present",
+    "Michael Godfrey": "present",
+    "Shedrack Ibrahim": "absent",
+    "Frank Emmanuel": "late",
+    "Joshua Peter": "present",
+  });
+  const [userInteracted, setUserInteracted] = useState(false);
 
+  const toggleMemberStatus = (name: string) => {
+    setUserInteracted(true);
+    setCheckedStatus((prev) => {
+      const current = prev[name] || "absent";
+      const next =
+        current === "present"
+          ? "late"
+          : current === "late"
+            ? "absent"
+            : "present";
+      return { ...prev, [name]: next };
+    });
+  };
+
+  const checkAll = () => {
+    setUserInteracted(true);
+    const all: Record<string, "present" | "late" | "absent"> = {};
+    ROLL_CALL_ROWS.forEach((r) => {
+      all[r.name] = "present";
+    });
+    setCheckedStatus(all);
+  };
+
+  const resetAll = () => {
+    setUserInteracted(true);
+    const all: Record<string, "present" | "late" | "absent"> = {};
+    ROLL_CALL_ROWS.forEach((r) => {
+      all[r.name] = "absent";
+    });
+    setCheckedStatus(all);
+  };
+
+  // Subtle ambient cycling if visitor hasn't clicked yet
   useEffect(() => {
-    let cycleTimeouts: ReturnType<typeof setTimeout>[] = [];
+    if (userInteracted) return;
 
-    const runRollCall = () => {
-      cycleTimeouts.forEach(clearTimeout);
-      cycleTimeouts = [];
+    const interval = setInterval(() => {
+      setCheckedStatus((prev) => {
+        const names = ROLL_CALL_ROWS.map((r) => r.name);
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        const current = prev[randomName] || "absent";
+        const next =
+          current === "present"
+            ? "late"
+            : current === "late"
+              ? "absent"
+              : "present";
+        return { ...prev, [randomName]: next };
+      });
+    }, 3200);
 
-      setPresentCount(0);
-
-      cycleTimeouts = ROLL_CALL_ROWS.map((_, index) =>
-        setTimeout(
-          () => {
-            setPresentCount((count) =>
-              Math.min(count + 1, ROLL_CALL_ROWS.length),
-            );
-          },
-          500 + index * 550,
-        ),
-      );
-    };
-
-    runRollCall();
-
-    const loop = setInterval(runRollCall, 500 + totalRows * 550 + 2600);
-
-    return () => {
-      cycleTimeouts.forEach(clearTimeout);
-      clearInterval(loop);
-    };
-  }, [totalRows]);
+    return () => clearInterval(interval);
+  }, [userInteracted]);
 
   const activeRole = useMemo(() => ROLE_VIEWS[roleView], [roleView]);
 
@@ -196,7 +228,12 @@ export default function LandingPage() {
         />
 
         <main>
-          <Hero presentCount={presentCount} totalRows={totalRows} />
+          <Hero
+            checkedStatus={checkedStatus}
+            onToggleMember={toggleMemberStatus}
+            onCheckAll={checkAll}
+            onResetAll={resetAll}
+          />
 
           <TrustStrip />
 
@@ -451,16 +488,35 @@ function Nav({ mobileNavOpen, setMobileNavOpen }: NavProps) {
 /* -------------------------------------------------------------------------- */
 
 interface HeroProps {
-  presentCount: number;
-  totalRows: number;
+  checkedStatus: Record<string, "present" | "late" | "absent">;
+  onToggleMember: (name: string) => void;
+  onCheckAll: () => void;
+  onResetAll: () => void;
 }
 
-function Hero({ presentCount, totalRows }: HeroProps) {
-  const progress = totalRows > 0 ? (presentCount / totalRows) * 100 : 0;
+function Hero({
+  checkedStatus,
+  onToggleMember,
+  onCheckAll,
+  onResetAll,
+}: HeroProps) {
+  const totalRows = ROLL_CALL_ROWS.length;
+  const presentCount = Object.values(checkedStatus).filter(
+    (s) => s === "present",
+  ).length;
+  const lateCount = Object.values(checkedStatus).filter(
+    (s) => s === "late",
+  ).length;
+  const absentCount = Object.values(checkedStatus).filter(
+    (s) => s === "absent",
+  ).length;
+
+  const progress =
+    totalRows > 0 ? ((presentCount + lateCount * 0.5) / totalRows) * 100 : 0;
 
   return (
     <section className="relative overflow-hidden px-5 pb-24 pt-20 sm:px-6 md:pb-32 md:pt-28 lg:px-8">
-      {/* Background atmosphere — static, no continuous animation */}
+      {/* Background atmosphere */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute left-[8%] top-[-180px] h-[520px] w-[520px] rounded-full bg-[#6D28D9]/20 blur-[120px]" />
         <div className="absolute right-[-120px] top-[10%] h-[500px] w-[500px] rounded-full bg-[#8B5CF6]/10 blur-[120px]" />
@@ -469,29 +525,28 @@ function Hero({ presentCount, totalRows }: HeroProps) {
 
       <div className="mx-auto grid max-w-7xl items-center gap-16 lg:grid-cols-[1.05fr_0.95fr] lg:gap-20">
         <Reveal>
-          <div className="flex items-center gap-2.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#A78BFA]" />
-            <span className="membo-mono text-[11px] font-medium uppercase tracking-[0.16em] text-[#AFA8C4]">
-              Organisation management, simplified
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#8B5CF6]/30 bg-[#8B5CF6]/10 px-3 py-1 text-xs text-[#C4B5FD]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
+            <span className="membo-mono text-[11px] font-semibold uppercase tracking-[0.14em]">
+              Your organisation&apos;s database
             </span>
           </div>
 
-          <h1 className="membo-display mt-7 max-w-3xl text-[2.7rem] font-bold leading-[1.04] tracking-[-0.045em] text-white sm:text-5xl lg:text-[4.35rem]">
-            Run your organisation
-            <span className="block text-[#A78BFA]">with clarity.</span>
+          <h1 className="membo-display mt-6 max-w-3xl text-[2.7rem] font-bold leading-[1.05] tracking-[-0.045em] text-white sm:text-5xl lg:text-[4.2rem]">
+            Take attendance.
+            <span className="block text-[#A78BFA]">Track members.</span>
+            <span className="block text-white">Organize teams.</span>
           </h1>
 
-          <p className="mt-7 max-w-2xl text-[17px] leading-8 text-[#AAA5BA] sm:text-lg">
-            MEMBO brings your people, groups, attendance, and organisational
-            activities into one structured workspace, so your organisation can
-            spend less time managing records and more time doing the work that
-            matters.
+          <p className="mt-6 max-w-2xl text-[17px] leading-8 text-[#AAA5BA] sm:text-lg">
+            The clean, all-in-one workspace for churches, clubs, and communities.
+            Know who showed up, follow up with absent members, and manage rosters — in seconds, not hours.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-3.5">
             <Link
               href={AUTH_SIGNUP_PATH}
-              className="inline-flex items-center gap-2 rounded-lg bg-[#8B5CF6] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_35px_-12px_rgba(139,92,246,0.75)] transition-all hover:-translate-y-0.5 hover:bg-[#9B6AF7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#A78BFA]"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#8B5CF6] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_35px_-12px_rgba(139,92,246,0.75)] transition-all hover:-translate-y-0.5 hover:bg-[#9B6AF7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#A78BFA]"
             >
               Get started free
               <ArrowRightIcon />
@@ -499,26 +554,23 @@ function Hero({ presentCount, totalRows }: HeroProps) {
 
             <Link
               href={AUTH_LOGIN_PATH}
-              className="rounded-lg border border-white/12 bg-white/2 px-6 py-3.5 text-sm font-semibold text-white transition-all hover:border-white/22 hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#A78BFA]"
+              className="rounded-xl border border-white/12 bg-white/3 px-6 py-3.5 text-sm font-semibold text-white transition-all hover:border-white/25 hover:bg-white/7 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#A78BFA]"
             >
-              Log in
+              Sign in
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#77718B]">
-            <span className="flex items-center gap-2">
-              <CheckIcon />
-              Built for organisations
+          <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-[#8F89A5]">
+            <span className="flex items-center gap-1.5">
+              <span className="text-[#10B981] font-bold">✓</span> Free to start
             </span>
 
-            <span className="flex items-center gap-2">
-              <CheckIcon />
-              Role-based access
+            <span className="flex items-center gap-1.5">
+              <span className="text-[#10B981] font-bold">✓</span> Phone &amp; laptop ready
             </span>
 
-            <span className="flex items-center gap-2">
-              <CheckIcon />
-              Start free
+            <span className="flex items-center gap-1.5">
+              <span className="text-[#10B981] font-bold">✓</span> No credit card required
             </span>
           </div>
         </Reveal>
@@ -533,133 +585,204 @@ function Hero({ presentCount, totalRows }: HeroProps) {
             className="absolute inset-x-12 top-8 h-[380px] rounded-full bg-[#7C3AED]/20 blur-[90px]"
           />
 
-          {/* Decorative group card */}
+          {/* Decorative department badge */}
           <div
             aria-hidden
-            className="absolute -right-2 -top-8 z-0 hidden w-[82%] rotate-4 rounded-2xl border border-white/8 bg-[#171229] p-5 shadow-2xl sm:block"
+            className="absolute -right-2 -top-8 z-0 hidden w-[82%] rotate-3 rounded-2xl border border-white/8 bg-[#171229] p-5 shadow-2xl sm:block"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="membo-mono text-[10px] uppercase tracking-[0.15em] text-[#706985]">
-                  Group
+                <p className="membo-mono text-[10px] uppercase tracking-[0.15em] text-[#8B849D]">
+                  Department
                 </p>
 
-                <p className="membo-display mt-1 text-lg font-semibold text-white">
-                  Technical Unit
+                <p className="membo-display mt-0.5 text-base font-semibold text-white">
+                  Sunday Choir &amp; Ushers
                 </p>
               </div>
 
               <div className="flex -space-x-2">
-                <Avatar initials="AO" />
-                <Avatar initials="TB" />
-                <Avatar initials="GU" />
+                <Avatar initials="DM" />
+                <Avatar initials="AK" />
+                <Avatar initials="MG" />
               </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-between border-t border-white/7 pt-4">
-              <span className="text-xs text-[#706985]">18 members</span>
-              <span className="text-xs font-medium text-[#A78BFA]">
-                2 leaders
+            <div className="mt-4 flex items-center justify-between border-t border-white/7 pt-3">
+              <span className="text-xs text-[#8B849D]">{totalRows} assigned members</span>
+              <span className="text-xs font-semibold text-[#A78BFA]">
+                Active Roll Call
               </span>
             </div>
           </div>
 
-          {/* Attendance card — the page's signature element */}
-          <div className="relative z-10 mt-8 -rotate-[1.5deg] rounded-3xl border border-black/6 bg-[#F8F7FC] p-5 text-[#171326] shadow-[0_35px_100px_-30px_rgba(0,0,0,0.8)] transition-transform duration-500 ease-out hover:rotate-0 sm:p-6">
-            <div className="flex items-start justify-between border-b border-[#171326]/10 pb-5">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#EDE9FE] text-[#7C3AED]">
+          {/* Attendance card — Interactive Roll Call */}
+          <div className="relative z-10 mt-8 rounded-3xl border border-black/8 bg-[#F8F7FC] p-5 text-[#171326] shadow-[0_35px_100px_-30px_rgba(0,0,0,0.85)] sm:p-6">
+            <div className="flex items-start justify-between border-b border-[#171326]/10 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#7C3AED]">
                   <AttendanceIcon />
                 </div>
 
                 <div>
-                  <p className="membo-mono text-[10px] font-medium uppercase tracking-[0.12em] text-[#8B849D]">
-                    Attendance
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="membo-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7C3AED]">
+                      Live Roll Call
+                    </span>
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#10B981] animate-ping" />
+                  </div>
 
-                  <p className="membo-display text-lg font-bold">
-                    Sunday Service
+                  <p className="membo-display text-lg font-bold text-slate-900">
+                    Sunday Service Check-in
                   </p>
                 </div>
               </div>
 
               <div className="text-right">
-                <p className="membo-mono text-2xl font-semibold tabular-nums text-[#171326]">
+                <p className="membo-mono text-2xl font-bold tabular-nums text-[#171326]">
                   {presentCount}
-                  <span className="text-[#9B94A9]">/{totalRows}</span>
+                  <span className="text-xs font-normal text-slate-400">/{totalRows}</span>
                 </p>
 
                 <p className="membo-mono text-[9px] uppercase tracking-[0.12em] text-[#8B849D]">
-                  Present
+                  {lateCount > 0 ? `${lateCount} Late · ` : ""}{absentCount} Absent
                 </p>
               </div>
             </div>
 
-            <ul className="mt-4 flex flex-col gap-1">
-              {ROLL_CALL_ROWS.map((row, index) => {
-                const checkedIn = index < presentCount;
+            {/* Quick action bar */}
+            <div className="mt-3.5 flex items-center justify-between gap-2 rounded-xl bg-slate-100/80 px-3 py-2 text-xs">
+              <span className="text-[11px] text-slate-500 font-medium">
+                💡 Click any member to change status
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={onCheckAll}
+                  className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-[#7C3AED] shadow-xs hover:bg-purple-50 transition-colors"
+                >
+                  Check All
+                </button>
+                <button
+                  type="button"
+                  onClick={onResetAll}
+                  className="rounded-md bg-white px-2 py-1 text-[11px] font-semibold text-slate-500 shadow-xs hover:bg-slate-50 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {/* Member rows */}
+            <ul className="mt-3 flex flex-col gap-1.5" role="list">
+              {ROLL_CALL_ROWS.map((row) => {
+                const status = checkedStatus[row.name] || "absent";
+                const isPresent = status === "present";
+                const isLate = status === "late";
 
                 return (
                   <li
                     key={row.name}
-                    className="flex items-center justify-between rounded-xl px-2 py-2.5 transition-colors hover:bg-[#171326]/3"
+                    onClick={() => onToggleMember(row.name)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onToggleMember(row.name);
+                      }
+                    }}
+                    title={`Click to toggle ${row.name}'s attendance`}
+                    className={`group flex cursor-pointer select-none items-center justify-between rounded-xl px-3 py-2.5 transition-all active:scale-[0.99] ${
+                      isPresent
+                        ? "bg-emerald-50/70 hover:bg-emerald-50"
+                        : isLate
+                          ? "bg-amber-50/70 hover:bg-amber-50"
+                          : "bg-white hover:bg-slate-100/70"
+                    } border border-slate-200/60`}
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] ${
-                          checkedIn
-                            ? "membo-check border-[#8B5CF6] bg-[#8B5CF6] text-white"
-                            : "border-[#171326]/15 text-transparent"
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold transition-all ${
+                          isPresent
+                            ? "border-emerald-500 bg-emerald-500 text-white shadow-xs"
+                            : isLate
+                              ? "border-amber-500 bg-amber-500 text-white shadow-xs"
+                              : "border-slate-300 bg-transparent text-transparent group-hover:border-slate-400"
                         }`}
                       >
-                        ✓
+                        {isPresent ? "✓" : isLate ? "⏱" : "—"}
                       </span>
 
-                      <span className="truncate text-sm font-medium">
-                        {row.name}
-                      </span>
+                      <div>
+                        <span
+                          className={`truncate text-sm font-semibold ${
+                            isPresent
+                              ? "text-emerald-950"
+                              : isLate
+                                ? "text-amber-950"
+                                : "text-slate-700"
+                          }`}
+                        >
+                          {row.name}
+                        </span>
+                        <span className="membo-mono ml-2 text-[10px] text-slate-400">
+                          {row.role}
+                        </span>
+                      </div>
                     </div>
 
-                    <span className="membo-mono ml-3 shrink-0 text-[9px] uppercase tracking-widest text-[#8B849D]">
-                      {row.role}
+                    <span
+                      className={`membo-mono rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                        isPresent
+                          ? "bg-emerald-100 text-emerald-800"
+                          : isLate
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {status}
                     </span>
                   </li>
                 );
               })}
             </ul>
 
-            <div className="mt-4">
+            {/* Attendance rate progress */}
+            <div className="mt-4 pt-3 border-t border-slate-200/80">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-[10px] font-medium text-[#8B849D]">
-                  Attendance progress
+                <span className="text-[11px] font-semibold text-slate-600">
+                  Attendance Rate
                 </span>
 
-                <span className="membo-mono text-[10px] text-[#8B849D]">
+                <span className="membo-mono text-xs font-bold text-slate-800">
                   {Math.round(progress)}%
                 </span>
               </div>
 
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#171326]/10">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
                 <div
-                  className="h-full rounded-full bg-[#7C3AED] transition-all duration-500 ease-out"
-                  style={{ width: `${progress}%` }}
+                  className="h-full rounded-full bg-gradient-to-r from-[#7C3AED] to-[#10B981] transition-all duration-500 ease-out"
+                  style={{ width: `${Math.max(5, Math.min(100, progress))}%` }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Floating status */}
-          <div className="absolute -bottom-5 -left-3 z-20 hidden rounded-xl border border-white/8 bg-[#18132B] px-4 py-3 shadow-2xl sm:block">
+          {/* Floating badge */}
+          <div className="absolute -bottom-5 -left-3 z-20 hidden rounded-2xl border border-white/10 bg-[#18132B] px-4 py-3 shadow-2xl sm:block">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#8B5CF6]/15 text-[#A78BFA]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#10B981]/15 text-[#10B981]">
                 <CheckIcon />
               </div>
 
               <div>
                 <p className="text-xs font-semibold text-white">
-                  Attendance updated
+                  1-Click Check-in Active
                 </p>
-                <p className="mt-0.5 text-[10px] text-[#77718B]">Just now</p>
+                <p className="mt-0.5 text-[10px] text-[#A78BFA]">
+                  Instant sync across devices
+                </p>
               </div>
             </div>
           </div>
@@ -715,18 +838,16 @@ function Audience() {
             </span>
 
             <h2 className="membo-display mt-4 max-w-xl text-3xl font-bold leading-tight tracking-[-0.03em] text-white sm:text-4xl">
-              Membo is built for 
+              Designed for communities
               <span className="block text-[#A78BFA]">
-                For Organisations.
+                that meet regularly.
               </span>
             </h2>
           </Reveal>
 
           <Reveal delay={100}>
             <p className="max-w-2xl text-[16px] leading-8 text-[#9992A9]">
-              MEMBO gives membership-based organisations a structured way to
-              manage their people and activities without forcing them to stitch
-              together spreadsheets, paper records, and disconnected tools.
+              From weekend church services to weekly club practices, Membo replaces paper rosters and disorganized WhatsApp groups with a single place to track members, teams, and attendance.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2.5">
@@ -763,13 +884,12 @@ function Features() {
           </span>
 
           <h2 className="membo-display mt-4 text-3xl font-bold tracking-[-0.03em] text-white sm:text-4xl">
-            The operational foundation
-            <span className="text-[#A78BFA]"> your organisation needs.</span>
+            Everything you need to run
+            <span className="text-[#A78BFA]"> your community smoothly.</span>
           </h2>
 
           <p className="mt-5 text-[16px] leading-8 text-[#9992A9]">
-            MEMBO brings the core pieces of organisation management into one
-            coherent system.
+            No bloated enterprise menus or complicated setups. Just four essential tools built for speed and clarity.
           </p>
         </Reveal>
 
@@ -957,13 +1077,12 @@ function CtaBanner() {
             </div>
 
             <h2 className="membo-display mx-auto mt-7 max-w-3xl text-3xl font-bold tracking-[-0.035em] text-white sm:text-4xl lg:text-5xl">
-              Give your organisation
-              <span className="text-[#A78BFA]"> a better system.</span>
+              Ready to ditch the paper register?
+              <span className="block text-[#A78BFA]">Get started with Membo today.</span>
             </h2>
 
             <p className="mx-auto mt-5 max-w-2xl text-[16px] leading-8 text-[#91899F]">
-              Bring people, groups, attendance, and organisational activities
-              together in one structured workspace.
+              Create your organization in under 30 seconds. Free forever for small communities.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">

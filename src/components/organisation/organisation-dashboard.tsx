@@ -15,6 +15,7 @@ import { SettingsTab } from "./settings-tab";
 import { PeopleTab } from "./people-tab";
 import { AttendanceTab } from "./attendance-tab";
 import { DuplicateAlerts } from "./duplicate-alerts";
+import { GroupsTab } from "./groups-tab";
 
 interface OrganisationDashboardProps {
   organisationId: string;
@@ -50,9 +51,14 @@ interface UserProfile {
 interface Organisation {
   id: string;
   name: string;
-  slug: string | null;
-  status?: string | null;
-  terminology?: Record<string, string> | null;
+  slug: string;
+  status: string;
+  timezone: string;
+  terminology?: {
+    owner?: string;
+    admin?: string;
+    member?: string;
+  };
   [key: string]: unknown;
 }
 
@@ -209,16 +215,6 @@ export function OrganisationDashboard({
   const [savingProfile, setSavingProfile] = useState(false);
 
   // ---------------------------------------------------------------------------
-  // Synchronise active tab with route-provided initial tab
-  // ---------------------------------------------------------------------------
-
-  useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
-
-  // ---------------------------------------------------------------------------
   // Scroll detection for compact header
   // ---------------------------------------------------------------------------
 
@@ -270,27 +266,111 @@ export function OrganisationDashboard({
 
       setUserEmail(user.email || "");
 
-      // 2. Fetch user profile
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const todayIso = new Date().toISOString().split("T")[0];
 
-      if (profileError) {
-        console.error("Failed to load user profile:", profileError);
-      }
+      // 2. Fetch primary datasets concurrently
+      const [
+        profileRes,
+        membershipRes,
+        organisationRes,
+        memberCountRes,
+        groupCountRes,
+        nextEventRes,
+        recentSessionsRes,
+        activityRes,
+        transferRes,
+      ] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+        supabase
+          .from("organisation_memberships")
+          .select(
+            `
+            id,
+            organisation_id,
+            user_id,
+            role_id,
+            status,
+            joined_at,
+            roles (
+              id,
+              code,
+              label
+            )
+          `,
+          )
+          .eq("organisation_id", organisationId)
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .maybeSingle(),
+        supabase
+          .from("organisations")
+          .select("*")
+          .eq("id", organisationId)
+          .maybeSingle(),
+        supabase
+          .from("people")
+          .select("*", { count: "exact", head: true })
+          .eq("organisation_id", organisationId)
+          .eq("status", "active"),
+        supabase
+          .from("groups")
+          .select("*", { count: "exact", head: true })
+          .eq("organisation_id", organisationId)
+          .is("archived_at", null),
+        supabase
+          .from("attendance_sessions")
+          .select("id, organisation_id, group_id, session_date, status")
+          .eq("organisation_id", organisationId)
+          .eq("status", "open")
+          .gte("session_date", todayIso)
+          .order("session_date", { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("attendance_sessions")
+          .select("id, session_date")
+          .eq("organisation_id", organisationId)
+          .gte("session_date", sevenDaysAgo.toISOString().split("T")[0]),
+        supabase
+          .from("organisation_memberships")
+          .select("joined_at, user_id")
+          .eq("organisation_id", organisationId)
+          .eq("status", "active")
+          .order("joined_at", { ascending: false })
+          .limit(5),
+        transferId
+          ? supabase
+              .from("ownership_transfers")
+              .select(
+                `
+                *,
+                sender:sender_id (
+                  id,
+                  profiles (
+                    full_name,
+                    email
+                  )
+                )
+              `,
+              )
+              .eq("id", transferId)
+              .eq("status", "pending")
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
 
-      if (profile) {
+      // Profile resolution
+      if (profileRes.data) {
         const resolvedProfile: UserProfile = {
-          id: profile.id,
-          full_name: profile.full_name ?? null,
-          email: profile.email ?? user.email ?? null,
-          avatar_url: profile.avatar_url ?? null,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at,
+          id: profileRes.data.id,
+          full_name: profileRes.data.full_name ?? null,
+          email: profileRes.data.email ?? user.email ?? null,
+          avatar_url: profileRes.data.avatar_url ?? null,
+          created_at: profileRes.data.created_at,
+          updated_at: profileRes.data.updated_at,
         };
-
         setUserProfile(resolvedProfile);
         setProfileName(resolvedProfile.full_name || "");
       } else {
@@ -298,56 +378,17 @@ export function OrganisationDashboard({
         setProfileName("");
       }
 
-      // 3. Fetch active membership
-      const { data: membershipData, error: membershipError } = await supabase
-        .from("organisation_memberships")
-        .select(
-          `
-              id,
-              organisation_id,
-              user_id,
-              role_id,
-              status,
-              joined_at
-            `,
-        )
-        .eq("organisation_id", organisationId)
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .maybeSingle();
-
-      if (membershipError) {
-        console.error(
-          "Failed to load organisation membership:",
-          membershipError,
-        );
-      }
-
-      if (membershipError || !membershipData) {
+      // Membership check
+      const membershipData = membershipRes.data;
+      if (membershipRes.error || !membershipData) {
         showToast("You do not have access to this organisation.", "error");
-
         router.push("/dashboard");
         return;
       }
 
-      // 4. Fetch role
-      let roleData: Role | null = null;
-
-      if (membershipData.role_id) {
-        const { data: fetchedRole, error: roleError } = await supabase
-          .from("roles")
-          .select("id, code, label")
-          .eq("id", membershipData.role_id)
-          .maybeSingle();
-
-        if (roleError) {
-          console.error("Failed to load membership role:", roleError);
-        }
-
-        if (fetchedRole) {
-          roleData = fetchedRole as Role;
-        }
-      }
+      const roleData = Array.isArray(membershipData.roles)
+        ? membershipData.roles[0]
+        : (membershipData.roles as Role | null);
 
       const resolvedMembership: Membership = {
         id: membershipData.id,
@@ -358,188 +399,82 @@ export function OrganisationDashboard({
         joined_at: membershipData.joined_at,
         roles: roleData,
       };
-
       setMembership(resolvedMembership);
 
-      // 5. Fetch organisation
-      const { data: organisationData, error: organisationError } =
-        await supabase
-          .from("organisations")
-          .select("*")
-          .eq("id", organisationId)
-          .maybeSingle();
-
-      if (organisationError) {
-        console.error("Failed to load organisation:", organisationError);
-      }
-
-      if (!organisationData) {
+      // Organisation check
+      if (!organisationRes.data) {
         showToast("Organisation could not be found.", "error");
         router.push("/dashboard");
         return;
       }
+      setOrganisation(organisationRes.data as Organisation);
 
-      setOrganisation(organisationData as Organisation);
-
-      // 6. Fetch active people count (from people table, not memberships)
-      const { count: memberCount, error: memberCountError } = await supabase
-        .from("people")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq("organisation_id", organisationId)
-        .eq("status", "active");
-
-      if (memberCountError) {
-        console.error("Failed to load member count:", memberCountError);
-      }
-
-      // 7. Fetch active group count
-      const { count: groupCount, error: groupCountError } = await supabase
-        .from("groups")
-        .select("*", {
-          count: "exact",
-          head: true,
-        })
-        .eq("organisation_id", organisationId)
-        .is("archived_at", null);
-
-      if (groupCountError) {
-        console.error("Failed to load group count:", groupCountError);
-      }
-
-      // 8. Fetch next attendance session
-      const { data: nextEventData, error: nextEventError } = await supabase
-        .from("attendance_sessions")
-        .select(
-          `
-            id,
-            organisation_id,
-            group_id,
-            session_date,
-            status
-          `,
-        )
-        .eq("organisation_id", organisationId)
-        .eq("status", "open")
-        .gte("session_date", new Date().toISOString().split("T")[0])
-        .order("session_date", {
-          ascending: true,
-        })
-        .limit(1)
-        .maybeSingle();
-
-      if (nextEventError) {
-        console.error(
-          "Failed to load next attendance session:",
-          nextEventError,
-        );
-      }
-
-      const nextEvent: DashboardNextEvent | null = nextEventData
+      // Next session event
+      const nextEvent: DashboardNextEvent | null = nextEventRes.data
         ? {
-            id: nextEventData.id,
-            organisation_id: nextEventData.organisation_id,
-            group_id: nextEventData.group_id ?? null,
+            id: nextEventRes.data.id,
+            organisation_id: nextEventRes.data.organisation_id,
+            group_id: nextEventRes.data.group_id ?? null,
             title: "Attendance Session",
-            date: nextEventData.session_date,
+            date: nextEventRes.data.session_date,
             type: null,
           }
         : null;
 
-      // 9. Calculate recent attendance rate from attendance_sessions
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      // Secondary parallel queries (records for rate + profile lookups for activities)
+      const recentSessions = recentSessionsRes.data || [];
+      const sessionIds = recentSessions.map((s) => s.id);
+      const activityData = activityRes.data || [];
+      const activityUserIds = [...new Set(activityData.map((a) => a.user_id))];
 
-      const { data: recentSessions, error: recentSessionsError } =
-        await supabase
-          .from("attendance_sessions")
-          .select("id, session_date")
-          .eq("organisation_id", organisationId)
-          .gte("session_date", sevenDaysAgo.toISOString().split("T")[0]);
+      const [recentRecordsRes, activityProfilesRes] = await Promise.all([
+        sessionIds.length > 0
+          ? supabase
+              .from("attendance_records")
+              .select("status")
+              .in("session_id", sessionIds)
+          : Promise.resolve({ data: [] }),
+        activityUserIds.length > 0
+          ? supabase
+              .from("profiles")
+              .select("id, full_name")
+              .in("id", activityUserIds)
+          : Promise.resolve({ data: [] }),
+      ]);
 
-      if (recentSessionsError) {
-        console.error(
-          "Failed to load recent attendance sessions:",
-          recentSessionsError,
-        );
-      }
-
+      // Calculate attendance rate
       let attendanceRate = 0;
-
-      if (recentSessions && recentSessions.length > 0) {
-        const sessionIds = recentSessions.map((s) => s.id);
-
-        const { data: recentRecords } = await supabase
-          .from("attendance_records")
-          .select("status")
-          .in("session_id", sessionIds);
-
-        if (recentRecords && recentRecords.length > 0) {
-          const totalRecords = recentRecords.length;
-          const presentRecords = recentRecords.filter(
-            (r) => r.status === "present" || r.status === "late",
-          ).length;
-
-          attendanceRate = Math.round((presentRecords / totalRecords) * 100);
-        }
+      const recentRecords = recentRecordsRes.data || [];
+      if (recentRecords.length > 0) {
+        const totalRecords = recentRecords.length;
+        const presentRecords = recentRecords.filter(
+          (r: { status: string }) =>
+            r.status === "present" || r.status === "late",
+        ).length;
+        attendanceRate = Math.round((presentRecords / totalRecords) * 100);
       }
 
       setStats({
-        memberCount: memberCount || 0,
-        groupCount: groupCount || 0,
+        memberCount: memberCountRes.count || 0,
+        groupCount: groupCountRes.count || 0,
         attendanceRate,
         nextEvent,
       });
 
-      // 10. Fetch recent membership activity
-      const { data: activityData, error: activityError } = await supabase
-        .from("organisation_memberships")
-        .select(
-          `
-            joined_at,
-            user_id
-          `,
-        )
-        .eq("organisation_id", organisationId)
-        .eq("status", "active")
-        .order("joined_at", {
-          ascending: false,
-        })
-        .limit(5);
+      // Construct recent activity
+      const profileMap = new Map<string, { full_name: string | null }>(
+        (activityProfilesRes.data || []).map(
+          (p: { id: string; full_name: string | null }) => [
+            p.id,
+            { full_name: p.full_name },
+          ],
+        ),
+      );
 
-      if (activityError) {
-        console.error("Failed to load recent activity:", {
-          message: activityError.message,
-          details: activityError.details,
-          hint: activityError.hint,
-          code: activityError.code,
-          fullError: activityError,
-        });
-      }
-
-      // Fetch profiles separately for activity
-      let profileMap = new Map<string, { full_name: string | null }>();
-      if (activityData && activityData.length > 0) {
-        const userIds = [...new Set(activityData.map((a) => a.user_id))];
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", userIds);
-
-        if (profileData) {
-          profileMap = new Map(
-            profileData.map((p) => [p.id, { full_name: p.full_name }]),
-          );
-        }
-      }
-
-      const activities: RecentActivity[] = (activityData || [])
+      const activities: RecentActivity[] = activityData
         .filter((item) => item.joined_at)
         .map((membershipItem) => {
           const profile = profileMap.get(membershipItem.user_id);
-
           return {
             type: "new_member",
             text: `${profile?.full_name || "A member"} joined the organisation`,
@@ -548,48 +483,22 @@ export function OrganisationDashboard({
             ).toLocaleDateString(),
           };
         });
-
       setRecentActivity(activities);
 
-      // 11. Fetch pending ownership transfer
-      if (transferId) {
-        const { data: transferData, error: transferError } = await supabase
-          .from("ownership_transfers")
-          .select(
-            `
-              *,
-              sender:sender_id (
-                id,
-                profiles (
-                  full_name,
-                  email
-                )
-              )
-            `,
-          )
-          .eq("id", transferId)
-          .eq("status", "pending")
-          .maybeSingle();
-
-        if (transferError) {
-          console.error("Failed to load ownership transfer:", transferError);
-        }
-
-        if (transferData) {
-          if (transferData.receiver_id === user.id) {
-            setPendingTransfer(transferData as OwnershipTransfer);
-            setShowTransferModal(true);
-          } else {
-            showToast(
-              "You are not the designated receiver for this ownership transfer.",
-              "error",
-            );
-          }
+      // Ownership transfer handling
+      if (transferRes.data) {
+        if (transferRes.data.receiver_id === user.id) {
+          setPendingTransfer(transferRes.data as OwnershipTransfer);
+          setShowTransferModal(true);
+        } else {
+          showToast(
+            "You are not the designated receiver for this ownership transfer.",
+            "error",
+          );
         }
       }
     } catch (error) {
       console.error("=== MEMBO DASHBOARD FATAL ERROR ===", error);
-
       showToast("Failed to load organisation dashboard.", "error");
     } finally {
       setLoading(false);
@@ -863,7 +772,7 @@ export function OrganisationDashboard({
                 </svg>
               </Link>
 
-              <h1 className="text-base md:text-lg font-semibold text-(--foreground) truncate max-w-[200px] md:max-w-md">
+              <h1 className="text-base md:text-lg font-semibold text-(--foreground) truncate max-w-50 md:max-w-md">
                 {organisation?.name || "Organisation"}
               </h1>
 
@@ -950,14 +859,12 @@ export function OrganisationDashboard({
                   key={tab.id}
                   type="button"
                   onClick={() => {
-                    if (tab.id === "groups") {
-                      router.push(
-                        `/dashboard/organizations/${organisationId}/groups`,
-                      );
-                      return;
-                    }
-
                     setActiveTab(tab.id);
+                    if (typeof window !== "undefined") {
+                      const url = new URL(window.location.href);
+                      url.searchParams.set("tab", tab.id);
+                      window.history.replaceState({}, "", url.toString());
+                    }
                   }}
                   className={[
                     "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap",
@@ -1025,80 +932,148 @@ export function OrganisationDashboard({
                     <p className="text-2xl font-bold text-(--foreground)">
                       {userRoleLabel}
                     </p>
+                    <p className="text-xs text-(--muted)">
+                      {isManager ? "Full workspace access" : "Personal view"}
+                    </p>
                   </div>
 
-                  <div className="bg-(--surface) p-5 rounded-xl border border-(--border) shadow-sm space-y-1">
-                    <span className="text-xs text-(--muted) font-semibold uppercase tracking-wider">
-                      Members
-                    </span>
+                  <div
+                    onClick={() =>
+                      setActiveTab(isManager ? "people" : "groups")
+                    }
+                    className="bg-(--surface) p-5 rounded-xl border border-(--border) shadow-sm space-y-1 cursor-pointer hover:border-(--primary)/50 transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-(--muted) font-semibold uppercase tracking-wider">
+                        Members
+                      </span>
+                      <span className="text-xs text-(--primary) opacity-0 group-hover:opacity-100 transition-opacity">
+                        View directory →
+                      </span>
+                    </div>
 
                     <p className="text-2xl font-bold text-(--foreground)">
                       {stats.memberCount}
                     </p>
+                    <p className="text-xs text-(--muted)">
+                      Active in directory
+                    </p>
                   </div>
 
-                  <div className="bg-(--surface) p-5 rounded-xl border border-(--border) shadow-sm space-y-1">
-                    <span className="text-xs text-(--muted) font-semibold uppercase tracking-wider">
-                      Groups
-                    </span>
+                  <div
+                    onClick={() => setActiveTab("groups")}
+                    className="bg-(--surface) p-5 rounded-xl border border-(--border) shadow-sm space-y-1 cursor-pointer hover:border-(--primary)/50 transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-(--muted) font-semibold uppercase tracking-wider">
+                        Groups
+                      </span>
+                      <span className="text-xs text-(--primary) opacity-0 group-hover:opacity-100 transition-opacity">
+                        View groups →
+                      </span>
+                    </div>
 
                     <p className="text-2xl font-bold text-(--foreground)">
                       {stats.groupCount}
                     </p>
+                    <p className="text-xs text-(--muted)">Teams & units</p>
                   </div>
 
-                  <div className="bg-(--surface) p-5 rounded-xl border border-(--border) shadow-sm space-y-1">
-                    <span className="text-xs text-(--muted) font-semibold uppercase tracking-wider">
-                      Attendance Rate
-                    </span>
+                  <div
+                    onClick={() => isManager && setActiveTab("attendance")}
+                    className={`bg-(--surface) p-5 rounded-xl border border-(--border) shadow-sm space-y-2 ${isManager ? "cursor-pointer hover:border-(--primary)/50 transition-all group" : ""}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-(--muted) font-semibold uppercase tracking-wider">
+                        Attendance Rate
+                      </span>
+                      {isManager && (
+                        <span className="text-xs text-(--primary) opacity-0 group-hover:opacity-100 transition-opacity">
+                          Manage →
+                        </span>
+                      )}
+                    </div>
 
-                    <p className="text-2xl font-bold text-(--foreground)">
-                      {stats.attendanceRate}%
-                    </p>
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-2xl font-bold text-(--foreground)">
+                        {stats.attendanceRate}%
+                      </p>
+                      <span className="text-xs text-(--muted)">
+                        past 7 days
+                      </span>
+                    </div>
+
+                    {/* Visual Progress Bar */}
+                    <div className="w-full bg-(--background) h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-linear-to-r from-(--primary) to-(--primary-light) rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(Math.max(stats.attendanceRate, 0), 100)}%`,
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Next Event */}
+                {/* Next Event / Active Session */}
 
-                {stats.nextEvent && (
-                  <div className="bg-linear-to-r from-(--primary) to-(--primary-light) rounded-xl p-6 text-white shadow-lg">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-wider opacity-80">
-                          Next Event
+                {stats.nextEvent ? (
+                  <div className="bg-linear-to-r from-(--primary) to-(--primary-light) rounded-xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                        <p className="text-xs font-semibold uppercase tracking-wider opacity-90">
+                          Upcoming Attendance Session
                         </p>
+                      </div>
 
-                        <h3 className="text-xl font-bold mt-1 truncate">
-                          {stats.nextEvent.title}
-                        </h3>
+                      <h3 className="text-xl font-bold mt-1.5 truncate">
+                        {stats.nextEvent.title}
+                      </h3>
 
-                        <p className="text-sm opacity-90 mt-1">
-                          {new Date(stats.nextEvent.date).toLocaleDateString(
-                            "en-US",
-                            {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            },
-                          )}
-                        </p>
-
-                        {stats.nextEvent.type && (
-                          <p className="text-xs opacity-75 mt-1 capitalize">
-                            {stats.nextEvent.type}
-                          </p>
+                      <p className="text-sm opacity-90 mt-1">
+                        {new Date(stats.nextEvent.date).toLocaleDateString(
+                          "en-US",
+                          {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
                         )}
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold">Upcoming</p>
-
-                        <p className="text-xs opacity-80">Attendance session</p>
-                      </div>
+                      </p>
                     </div>
+
+                    {isManager && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("attendance")}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-(--primary) font-semibold text-sm shadow-md hover:bg-white/90 transition-all shrink-0 cursor-pointer"
+                      >
+                        📅 Take Attendance
+                      </button>
+                    )}
                   </div>
-                )}
+                ) : isManager ? (
+                  <div className="bg-(--surface) border border-dashed border-(--border) rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h4 className="text-sm font-bold text-(--foreground)">
+                        No session active today
+                      </h4>
+                      <p className="text-xs text-(--muted) mt-0.5">
+                        Ready to record participation? Start a roll-call or
+                        headcount session.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("attendance")}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-(--primary) text-white font-semibold text-xs shadow hover:bg-(--primary-dark) transition-all shrink-0 cursor-pointer"
+                    >
+                      + Start Attendance Session
+                    </button>
+                  </div>
+                ) : null}
 
                 {/* Recent Activity + Quick Links */}
 
@@ -1106,9 +1081,20 @@ export function OrganisationDashboard({
                   {/* Recent Activity */}
 
                   <div className="md:col-span-2 bg-(--surface) border border-(--border) rounded-xl p-6 shadow-sm space-y-4">
-                    <h4 className="text-base font-bold text-(--foreground) border-b border-(--border) pb-2">
-                      Recent Activity
-                    </h4>
+                    <div className="flex items-center justify-between border-b border-(--border) pb-2">
+                      <h4 className="text-base font-bold text-(--foreground)">
+                        Recent Activity
+                      </h4>
+                      {isManager && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("people")}
+                          className="text-xs font-semibold text-(--primary) hover:underline cursor-pointer"
+                        >
+                          View Directory →
+                        </button>
+                      )}
+                    </div>
 
                     <div className="space-y-4">
                       {recentActivity.length > 0 ? (
@@ -1135,9 +1121,24 @@ export function OrganisationDashboard({
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-(--muted)">
-                          No recent activity.
-                        </p>
+                        <div className="text-center py-6 border border-dashed border-(--border) rounded-xl">
+                          <p className="text-sm font-medium text-(--foreground)">
+                            No activity recorded yet
+                          </p>
+                          <p className="text-xs text-(--muted) mt-1 max-w-sm mx-auto">
+                            New members and attendance records will appear here
+                            in real-time.
+                          </p>
+                          {isManager && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab("people")}
+                              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--primary)/10 text-(--primary) text-xs font-semibold hover:bg-(--primary)/20 transition-all cursor-pointer"
+                            >
+                              + Add your first member
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1161,59 +1162,57 @@ export function OrganisationDashboard({
                           <button
                             type="button"
                             onClick={() => setActiveTab("people")}
-                            className="w-full text-left py-2 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer"
+                            className="w-full text-left py-2.5 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer flex items-center justify-between"
                           >
-                            👥 Add / Invite members
+                            <span>👥 Add / Invite members</span>
+                            <span className="text-(--muted)">→</span>
                           </button>
 
                           <button
                             type="button"
-                            onClick={() =>
-                              router.push(
-                                `/dashboard/organizations/${organisationId}/groups`,
-                              )
-                            }
-                            className="w-full text-left py-2 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer"
+                            onClick={() => setActiveTab("groups")}
+                            className="w-full text-left py-2.5 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer flex items-center justify-between"
                           >
-                            📂 Manage workspace groups
+                            <span>📂 Manage workspace groups</span>
+                            <span className="text-(--muted)">→</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setActiveTab("attendance")}
-                            className="w-full text-left py-2 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer"
+                            className="w-full text-left py-2.5 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer flex items-center justify-between"
                           >
-                            📅 Manage attendance
+                            <span>📅 Take attendance</span>
+                            <span className="text-(--muted)">→</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setActiveTab("settings")}
-                            className="w-full text-left py-2 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer"
+                            className="w-full text-left py-2.5 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer flex items-center justify-between"
                           >
-                            ⚙️ Organisation settings
+                            <span>⚙️ Organisation settings</span>
+                            <span className="text-(--muted)">→</span>
                           </button>
                         </>
                       ) : (
                         <>
                           <button
                             type="button"
-                            onClick={() =>
-                              router.push(
-                                `/dashboard/organizations/${organisationId}/groups`,
-                              )
-                            }
-                            className="w-full text-left py-2 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer"
+                            onClick={() => setActiveTab("groups")}
+                            className="w-full text-left py-2.5 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer flex items-center justify-between"
                           >
-                            📂 View my groups
+                            <span>📂 View my groups</span>
+                            <span className="text-(--muted)">→</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setActiveTab("profile")}
-                            className="w-full text-left py-2 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer"
+                            className="w-full text-left py-2.5 px-3 hover:bg-(--background) rounded-lg text-xs font-semibold text-(--primary) transition-all cursor-pointer flex items-center justify-between"
                           >
-                            👤 Manage my profile
+                            <span>👤 Manage my profile</span>
+                            <span className="text-(--muted)">→</span>
                           </button>
                         </>
                       )}
@@ -1229,6 +1228,14 @@ export function OrganisationDashboard({
 
             {resolvedActiveTab === "people" && isManager && (
               <PeopleTab organisationId={organisationId} userRole={userRole} />
+            )}
+
+            {/* ================================================================ */}
+            {/* GROUPS */}
+            {/* ================================================================ */}
+
+            {resolvedActiveTab === "groups" && (
+              <GroupsTab organisationId={organisationId} userRole={userRole} />
             )}
 
             {/* ================================================================ */}
@@ -1258,7 +1265,7 @@ export function OrganisationDashboard({
             {/* SETTINGS */}
             {/* ================================================================ */}
 
-            {resolvedActiveTab === "settings" && isManager && (
+            {resolvedActiveTab === "settings" && isManager && organisation && (
               <SettingsTab
                 organisationId={organisationId}
                 userRole={userRole}

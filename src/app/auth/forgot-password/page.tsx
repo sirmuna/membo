@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { Preloader } from "@/components/preloader";
 
 export default function ForgotPasswordPage() {
   const supabase = createClient();
@@ -36,14 +37,14 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <main className="flex min-h-screen bg-(--background)">
+      <main className="flex min-h-screen bg-[#0D0A1A] text-[#E8E5F2]">
         <style>{`
           input:-webkit-autofill,
           input:-webkit-autofill:hover,
           input:-webkit-autofill:focus,
           input:-webkit-autofill:active {
-            -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.05) inset;
-            -webkit-text-fill-color: white;
+            -webkit-box-shadow: 0 0 0 1000px rgba(243, 239, 230, 0.04) inset;
+            -webkit-text-fill-color: #F3EFE6;
             transition: background-color 5000s ease-in-out 0s;
           }
           input:-webkit-autofill::first-line {
@@ -52,7 +53,7 @@ export default function ForgotPasswordPage() {
           }
         `}</style>
         <section className="flex w-full flex-col justify-center px-6 py-10 sm:px-10 lg:w-[48%] lg:px-16 xl:px-24">
-          <div className="mx-auto w-full max-w-[390px]">
+          <div className="mx-auto w-full max-w-97.5">
             <Link
               href="/"
               className="mb-14 inline-flex items-center gap-3 transition-opacity hover:opacity-80"
@@ -98,48 +99,50 @@ export default function ForgotPasswordPage() {
 
               <Link
                 href="/auth/login"
-                className="block w-full rounded-lg bg-(--primary) px-4 py-3.5 text-sm font-semibold text-white text-center transition-all hover:bg-(--primary-light) hover:shadow-[0_12px_35px_-12px_rgba(139,92,246,0.6)]"
+                className="block w-full rounded-lg bg-[#8B5CF6] px-4 py-3.5 text-sm font-semibold text-white text-center transition-all hover:bg-[#A78BFA] hover:shadow-[0_12px_35px_-12px_rgba(139,92,246,0.6)]"
               >
                 Back to sign in
               </Link>
             </div>
 
             <p className="mt-12 text-center text-xs text-white/30">
-              A product of <span className="text-white/55">MUNACORE</span>
+              MEMBO by MUNACORE
             </p>
           </div>
         </section>
 
-        <aside className="relative hidden overflow-hidden bg-(--background) lg:flex lg:w-[52%]">
+        <aside className="relative hidden overflow-hidden bg-[#0D0A1A] lg:flex lg:w-[52%]">
           <div
-            className="pointer-events-none absolute inset-0 opacity-[0.055]"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
-              backgroundSize: "56px 56px",
-            }}
+            className="pointer-events-none absolute -bottom-28 -right-20 h-[560px] w-[560px] opacity-[0.06] grayscale"
+            aria-hidden="true"
+          >
+            <Image
+              src="/images/membo-t.png"
+              alt=""
+              fill
+              className="object-contain"
+            />
+          </div>
+
+          <div
+            className="pointer-events-none absolute -right-32 -top-32 h-130 w-130 rounded-full bg-[#6D28D9]/20 blur-[120px]"
             aria-hidden="true"
           />
 
           <div
-            className="pointer-events-none absolute -right-32 -top-32 h-[520px] w-[520px] rounded-full bg-[#6D28D9]/20 blur-[120px]"
+            className="pointer-events-none absolute -bottom-40 -left-40 h-125 w-125 rounded-full bg-[#8B5CF6]/10 blur-[130px]"
             aria-hidden="true"
           />
 
           <div
-            className="pointer-events-none absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-(--primary)/10 blur-[130px]"
-            aria-hidden="true"
-          />
-
-          <div
-            className="pointer-events-none absolute inset-y-0 left-0 w-px bg-white/[0.06]"
+            className="pointer-events-none absolute inset-y-0 left-0 w-px bg-white/6"
             aria-hidden="true"
           />
 
           <div className="relative flex h-full w-full flex-col justify-between px-14 py-14 xl:px-20 xl:py-16">
             <div className="flex justify-end">
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-(--primary-light)" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#A78BFA]" />
                 <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/35">
                   Reset Password
                 </span>
@@ -147,13 +150,13 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="max-w-xl">
-              <div className="mb-7 h-px w-12 bg-(--primary-light)" />
+              <div className="mb-7 h-px w-12 bg-[#A78BFA]" />
               <h2 className="font-serif text-[42px] font-semibold leading-[1.08] tracking-tight text-white xl:text-[54px]">
-                Secure account access.
+                Your link is on its way.
               </h2>
               <p className="mt-6 max-w-md text-[16px] leading-7 text-white/45">
-                We make it easy to recover your account and get back to managing
-                your organisation.
+                Set a new password and you&apos;ll be back in your workspace in
+                a minute.
               </p>
             </div>
 
@@ -161,6 +164,7 @@ export default function ForgotPasswordPage() {
               <p className="text-xs text-white/25">
                 Your organisation. Your workspace.
               </p>
+
               <p className="text-xs font-medium tracking-wide text-white/30">
                 A product of <span className="text-white/55">MUNACORE</span>
               </p>
@@ -171,8 +175,12 @@ export default function ForgotPasswordPage() {
     );
   }
 
+  if (loading) {
+    return <Preloader />;
+  }
+
   return (
-    <main className="flex min-h-screen bg-(--background)">
+    <main className="flex min-h-screen bg-[#0D0A1A] text-[#E8E5F2]">
       <style>{`
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
@@ -188,7 +196,7 @@ export default function ForgotPasswordPage() {
         }
       `}</style>
       <section className="flex w-full flex-col justify-center px-6 py-10 sm:px-10 lg:w-[48%] lg:px-16 xl:px-24">
-        <div className="mx-auto w-full max-w-[390px]">
+        <div className="mx-auto w-full max-w-97.5">
           <Link
             href="/"
             className="mb-14 inline-flex items-center gap-3 transition-opacity hover:opacity-80"
@@ -212,7 +220,7 @@ export default function ForgotPasswordPage() {
               Forgot password?
             </h1>
             <p className="mt-3 max-w-sm text-[15px] leading-6 text-[#AAA5BA]">
-              No worries, we&apos;ll send you reset instructions
+              No worries, we&apos;ll send you reset instructions.
             </p>
           </div>
 
@@ -249,7 +257,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-(--primary-light) hover:shadow-[0_12px_35px_-12px_rgba(139,92,246,0.6)] focus:outline-none focus:ring-4 focus:ring-(--primary)/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#8B5CF6] px-4 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#A78BFA] hover:shadow-[0_12px_35px_-12px_rgba(139,92,246,0.6)] focus:outline-none focus:ring-4 focus:ring-[#8B5CF6]/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? "Sending..." : "Send reset link"}
             </button>
@@ -259,7 +267,7 @@ export default function ForgotPasswordPage() {
             Remember your password?{" "}
             <Link
               href="/auth/login"
-              className="font-semibold text-(--primary-light) hover:text-white transition-colors"
+              className="font-semibold text-[#A78BFA] hover:text-white transition-colors"
             >
               Sign in
             </Link>
@@ -271,36 +279,38 @@ export default function ForgotPasswordPage() {
         </div>
       </section>
 
-      <aside className="relative hidden overflow-hidden bg-(--background) lg:flex lg:w-[52%]">
+      <aside className="relative hidden overflow-hidden bg-[#0D0A1A] lg:flex lg:w-[52%]">
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.055]"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
-            backgroundSize: "56px 56px",
-          }}
+          className="pointer-events-none absolute -bottom-28 -right-20 h-[560px] w-[560px] opacity-[0.06] grayscale"
+          aria-hidden="true"
+        >
+          <Image
+            src="/images/membo-t.png"
+            alt=""
+            fill
+            className="object-contain"
+          />
+        </div>
+
+        <div
+          className="pointer-events-none absolute -right-32 -top-32 h-130 w-130 rounded-full bg-[#6D28D9]/20 blur-[120px]"
           aria-hidden="true"
         />
 
         <div
-          className="pointer-events-none absolute -right-32 -top-32 h-[520px] w-[520px] rounded-full bg-[#6D28D9]/20 blur-[120px]"
+          className="pointer-events-none absolute -bottom-40 -left-40 h-125 w-125 rounded-full bg-[#8B5CF6]/10 blur-[130px]"
           aria-hidden="true"
         />
 
         <div
-          className="pointer-events-none absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-(--primary)/10 blur-[130px]"
-          aria-hidden="true"
-        />
-
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 w-px bg-white/[0.06]"
+          className="pointer-events-none absolute inset-y-0 left-0 w-px bg-white/6"
           aria-hidden="true"
         />
 
         <div className="relative flex h-full w-full flex-col justify-between px-14 py-14 xl:px-20 xl:py-16">
           <div className="flex justify-end">
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-(--primary-light)" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[#A78BFA]" />
               <span className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/35">
                 Reset Password
               </span>
@@ -308,13 +318,13 @@ export default function ForgotPasswordPage() {
           </div>
 
           <div className="max-w-xl">
-            <div className="mb-7 h-px w-12 bg-(--primary-light)" />
+            <div className="mb-7 h-px w-12 bg-[#A78BFA]" />
             <h2 className="font-serif text-[42px] font-semibold leading-[1.08] tracking-tight text-white xl:text-[54px]">
-              Secure account access.
+              Getting back in is simple.
             </h2>
             <p className="mt-6 max-w-md text-[16px] leading-7 text-white/45">
-              We make it easy to recover your account and get back to managing
-              your organisation.
+              We&apos;ll email you a secure link to set a new password and
+              return to your workspace.
             </p>
           </div>
 
@@ -322,6 +332,7 @@ export default function ForgotPasswordPage() {
             <p className="text-xs text-white/25">
               Your organisation. Your workspace.
             </p>
+
             <p className="text-xs font-medium tracking-wide text-white/30">
               A product of <span className="text-white/55">MUNACORE</span>
             </p>

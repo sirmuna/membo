@@ -796,7 +796,7 @@ export function GroupsTab({ organisationId, userRole }: GroupsTabProps) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Youth Choir"
-                  className="w-full rounded-lg border border-[var(--border)] bg-(--background) px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
                 />
               </div>
 
@@ -808,7 +808,7 @@ export function GroupsTab({ organisationId, userRole }: GroupsTabProps) {
                 <select
                   value={groupTypeId}
                   onChange={(e) => setGroupTypeId(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--border)] bg-(--background) px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
                 >
                   <option value="">-- No Group Type --</option>
 
@@ -828,7 +828,7 @@ export function GroupsTab({ organisationId, userRole }: GroupsTabProps) {
                 <select
                   value={parentGroupId}
                   onChange={(e) => setParentGroupId(e.target.value)}
-                  className="w-full rounded-lg border border-[var(--border)] bg-(--background) px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
                 >
                   <option value="">-- No Parent Group --</option>
 
@@ -855,7 +855,7 @@ export function GroupsTab({ organisationId, userRole }: GroupsTabProps) {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Brief description..."
-                  className="w-full rounded-lg border border-[var(--border)] bg-(--background) px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2.5 text-sm text-[var(--foreground)] outline-none focus:border-[var(--primary)]"
                 />
               </div>
 
@@ -1020,7 +1020,9 @@ export function GroupsTab({ organisationId, userRole }: GroupsTabProps) {
                           {canManageGroups && (
                             <button
                               type="button"
-                              onClick={() => handleRemoveGroupMember(membership)}
+                              onClick={() =>
+                                handleRemoveGroupMember(membership)
+                              }
                               className="text-xs font-medium text-[var(--error)] hover:underline"
                             >
                               Remove

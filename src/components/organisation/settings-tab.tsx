@@ -7,7 +7,17 @@ import { createClient } from "@/lib/supabase/client";
 interface SettingsTabProps {
   organisationId: string;
   userRole: string; // 'owner' | 'admin' | 'member'
-  organisationData: any;
+  organisationData: {
+    name: string;
+    slug: string;
+    status: string;
+    timezone: string;
+    terminology?: {
+      owner?: string;
+      admin?: string;
+      member?: string;
+    };
+  };
   onUpdate: () => void;
 }
 
@@ -80,12 +90,12 @@ export function SettingsTab({
 
   // Validate slug uniqueness on change (if changed from original)
   useEffect(() => {
-    if (!slug || slug === organisationData.slug) {
-      setSlugAvailable(null);
-      return;
-    }
-
     const delayDebounceFn = setTimeout(async () => {
+      if (!slug || slug === organisationData.slug) {
+        setSlugAvailable(null);
+        return;
+      }
+
       setSlugChecking(true);
       setError("");
 
@@ -98,7 +108,7 @@ export function SettingsTab({
 
         if (error) throw error;
         setSlugAvailable(data === null);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error checking slug uniqueness:", err);
       } finally {
         setSlugChecking(false);
@@ -150,9 +160,9 @@ export function SettingsTab({
         window.addToast("Organisation settings saved!", "success");
       }
       onUpdate();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to save settings:", err);
-      setError(err.message || "Failed to save settings.");
+      setError(err instanceof Error ? err.message : "Failed to save settings.");
     } finally {
       setSaving(false);
     }
@@ -182,12 +192,13 @@ export function SettingsTab({
         window.addToast("Organisation deleted successfully.", "success");
       }
       router.push("/dashboard");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to delete organisation:", err);
       console.error("Error details:", JSON.stringify(err, null, 2));
       setError(
-        err.message ||
-          "Failed to delete organisation. Make sure the delete_organisation RPC function is installed in your database.",
+        err instanceof Error
+          ? err.message
+          : "Failed to delete organisation. Make sure the delete_organisation RPC function is installed in your database.",
       );
       setDeleting(false);
     }
@@ -260,9 +271,9 @@ export function SettingsTab({
 
       <form
         onSubmit={handleSaveSettings}
-        className="space-y-6 bg-[var(--surface)] p-6 rounded-xl border border-[var(--border)] shadow-sm"
+        className="space-y-6 bg-(--surface) p-6 rounded-xl border border-(--border) shadow-sm"
       >
-        <h3 className="text-lg font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-2">
+        <h3 className="text-lg font-bold text-(--foreground) border-b border-(--border) pb-2">
           General Settings
         </h3>
 
@@ -271,7 +282,7 @@ export function SettingsTab({
           <div className="md:col-span-2">
             <label
               htmlFor="org-name"
-              className="block text-sm font-semibold text-[var(--foreground)]"
+              className="block text-sm font-semibold text-(--foreground)"
             >
               Organisation Name
             </label>
@@ -282,7 +293,7 @@ export function SettingsTab({
               disabled={isReadOnly || saving}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--border)] bg-(--background) px-4 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all"
+              className="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2 text-sm text-(--foreground) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all"
             />
           </div>
 
@@ -291,14 +302,12 @@ export function SettingsTab({
             <div className="flex justify-between items-center">
               <label
                 htmlFor="org-slug"
-                className="block text-sm font-semibold text-[var(--foreground)]"
+                className="block text-sm font-semibold text-(--foreground)"
               >
                 URL Slug ID
               </label>
               {slugChecking && (
-                <span className="text-[10px] text-[var(--muted)]">
-                  Checking...
-                </span>
+                <span className="text-[10px] text-(--muted)">Checking...</span>
               )}
               {!slugChecking && slugAvailable === true && (
                 <span className="text-[10px] text-emerald-500 font-medium">
@@ -318,7 +327,7 @@ export function SettingsTab({
               disabled={isReadOnly || saving}
               value={slug}
               onChange={(e) => setSlug(generateSlug(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-[var(--border)] bg-(--background) px-4 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 outline-none transition-all font-mono"
+              className="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2 text-sm text-(--foreground) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all font-mono"
             />
             {slug !== organisationData.slug && (
               <p className="text-[10px] text-amber-500 mt-1">
@@ -332,7 +341,7 @@ export function SettingsTab({
           <div>
             <label
               htmlFor="org-timezone"
-              className="block text-sm font-semibold text-[var(--foreground)]"
+              className="block text-sm font-semibold text-(--foreground)"
             >
               Timezone
             </label>
@@ -341,7 +350,7 @@ export function SettingsTab({
               disabled={isReadOnly || saving}
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[var(--border)] bg-(--background) px-3 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] outline-none transition-all"
+              className="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm text-(--foreground) focus:border-(--primary) outline-none transition-all"
             >
               {timezones.map((tz) => (
                 <option key={tz} value={tz}>
@@ -352,10 +361,10 @@ export function SettingsTab({
           </div>
         </div>
 
-        <h3 className="text-lg font-bold text-[var(--foreground)] border-b border-[var(--border)] pt-4 pb-2">
+        <h3 className="text-lg font-bold text-(--foreground) border-b border-(--border) pt-4 pb-2">
           Custom Terminology
         </h3>
-        <p className="text-xs text-[var(--muted)] -mt-2">
+        <p className="text-xs text-(--muted) -mt-2">
           Customize the display labels for roles inside this workspace.
         </p>
 
@@ -363,7 +372,7 @@ export function SettingsTab({
           <div>
             <label
               htmlFor="term-owner"
-              className="block text-sm font-semibold text-[var(--foreground)]"
+              className="block text-sm font-semibold text-(--foreground)"
             >
               Owner Label
             </label>
@@ -374,14 +383,14 @@ export function SettingsTab({
               value={ownerLabel}
               onChange={(e) => setOwnerLabel(e.target.value)}
               placeholder="e.g. Principal"
-              className="mt-1 w-full rounded-lg border border-[var(--border)] bg-(--background) px-4 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] outline-none transition-all"
+              className="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2 text-sm text-(--foreground) focus:border-(--primary) outline-none transition-all"
             />
           </div>
 
           <div>
             <label
               htmlFor="term-admin"
-              className="block text-sm font-semibold text-[var(--foreground)]"
+              className="block text-sm font-semibold text-(--foreground)"
             >
               Admin Label
             </label>
@@ -392,14 +401,14 @@ export function SettingsTab({
               value={adminLabel}
               onChange={(e) => setAdminLabel(e.target.value)}
               placeholder="e.g. Teacher"
-              className="mt-1 w-full rounded-lg border border-[var(--border)] bg-(--background) px-4 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] outline-none transition-all"
+              className="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2 text-sm text-(--foreground) focus:border-(--primary) outline-none transition-all"
             />
           </div>
 
           <div>
             <label
               htmlFor="term-member"
-              className="block text-sm font-semibold text-[var(--foreground)]"
+              className="block text-sm font-semibold text-(--foreground)"
             >
               Member Label
             </label>
@@ -410,12 +419,12 @@ export function SettingsTab({
               value={memberLabel}
               onChange={(e) => setMemberLabel(e.target.value)}
               placeholder="e.g. Student"
-              className="mt-1 w-full rounded-lg border border-[var(--border)] bg-(--background) px-4 py-2 text-sm text-[var(--foreground)] focus:border-[var(--primary)] outline-none transition-all"
+              className="mt-1 w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2 text-sm text-(--foreground) focus:border-(--primary) outline-none transition-all"
             />
           </div>
         </div>
 
-        <div className="pt-4 border-t border-[var(--border)] flex justify-end">
+        <div className="pt-4 border-t border-(--border) flex justify-end">
           <button
             type="submit"
             disabled={
@@ -423,7 +432,7 @@ export function SettingsTab({
               saving ||
               (slug !== organisationData.slug && slugAvailable === false)
             }
-            className="px-6 py-2.5 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-[var(--primary)]/30 disabled:opacity-50 disabled:hover:shadow-none transition-all cursor-pointer"
+            className="px-6 py-2.5 bg-linear-to-r from-(--primary) to-(--primary-dark) text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-(--primary)/30 disabled:opacity-50 disabled:hover:shadow-none transition-all cursor-pointer"
           >
             {saving ? "Saving..." : "Save Changes"}
           </button>
@@ -434,7 +443,7 @@ export function SettingsTab({
       {isOwner && (
         <section className="bg-red-500/5 border border-red-500/20 rounded-xl p-6 shadow-sm space-y-4">
           <h3 className="text-lg font-bold text-red-500">Danger Zone</h3>
-          <p className="text-xs text-[var(--muted)]">
+          <p className="text-xs text-(--muted)">
             Deleting this organisation will permanently delete the workspace,
             all memberships, groups, attendance and records. This action is
             irreversible.
@@ -456,7 +465,7 @@ export function SettingsTab({
                   className="block text-xs font-semibold text-red-500"
                 >
                   Type the slug ID{" "}
-                  <span className="font-mono bg-[var(--border)]/30 px-1 py-0.5 rounded text-[var(--foreground)]">
+                  <span className="font-mono bg-(--border)/30 px-1 py-0.5 rounded text-(--foreground)">
                     {organisationData.slug}
                   </span>{" "}
                   to confirm deletion:
@@ -467,7 +476,7 @@ export function SettingsTab({
                   placeholder={organisationData.slug}
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  className="mt-1.5 max-w-sm w-full rounded-lg border border-red-500/30 bg-(--background) px-4 py-2 text-xs text-[var(--foreground)] focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition-all font-mono"
+                  className="mt-1.5 max-w-sm w-full rounded-lg border border-red-500/30 bg-(--background) px-4 py-2 text-xs text-(--foreground) focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition-all font-mono"
                 />
               </div>
 
@@ -478,7 +487,7 @@ export function SettingsTab({
                     setShowDeleteConfirm(false);
                     setDeleteConfirmText("");
                   }}
-                  className="px-3 py-1.5 border border-[var(--border)] hover:bg-[var(--border)]/20 text-xs font-semibold rounded-lg cursor-pointer"
+                  className="px-3 py-1.5 border border-(--border) hover:bg-(--border)/20 text-xs font-semibold rounded-lg cursor-pointer"
                 >
                   Cancel
                 </button>

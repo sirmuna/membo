@@ -58,6 +58,15 @@ const navItems = [
   },
 ];
 
+interface OrganisationMembership {
+  organisation_id: string;
+  organisations: {
+    id: string;
+    name: string;
+    slug: string;
+  } | null;
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -73,58 +82,12 @@ export default function DashboardLayout({
     full_name: string | null;
     avatar_url: string | null;
   } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  type Organisation = {
-    id: string;
-    name: string;
-    slug: string;
-  };
-
-  type OrganisationMembership = {
-    organisation_id: string;
-    organisations: Organisation | null;
-  };
-
   const [organizations, setOrganizations] = useState<OrganisationMembership[]>(
     [],
   );
   const [orgExpanded, setOrgExpanded] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [showSignoutDialog, setShowSignoutDialog] = useState(false);
-
-  useEffect(() => {
-    // Start loading progress immediately on pathname change
-    setTimeout(() => {
-      setIsLoading(true);
-      setProgress(10);
-    }, 0);
-
-    // Smooth progress animation
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return prev;
-        // More aggressive initial progress, then slow down
-        const increment = prev < 30 ? Math.random() * 20 : Math.random() * 8;
-        return Math.min(prev + increment, 90);
-      });
-    }, 100);
-
-    // Complete loading after page transition
-    const timeoutId = setTimeout(() => {
-      clearInterval(progressInterval);
-      setProgress(100);
-      setTimeout(() => {
-        setIsLoading(false);
-        setProgress(0);
-      }, 300);
-    }, 800);
-
-    return () => {
-      clearInterval(progressInterval);
-      clearTimeout(timeoutId);
-    };
-  }, [pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -258,17 +221,6 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-(--background) text-(--foreground)">
-      {/* Page Loading Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-(--border) z-50">
-        <div
-          className="h-full bg-linear-to-r from-(--primary) via-(--primary-light) to-(--primary) shadow-lg"
-          style={{
-            width: `${progress}%`,
-            opacity: isLoading ? 1 : 0,
-            transition: `width 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease-out`,
-          }}
-        ></div>
-      </div>
       <div className="flex min-h-screen">
         <aside
           className={[

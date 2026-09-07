@@ -1,103 +1,117 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
-
-const zoomAnimation = `
-  @keyframes subtle-zoom {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.08);
-    }
-  }
-  .animate-zoom {
-    animation: subtle-zoom 2s ease-in-out infinite;
-  }
-`;
+import Image from "next/image";
 
 interface PreloaderProps {
   onComplete?: () => void;
+  /** Minimum time the preloader stays visible (ms) */
+  minDuration?: number;
 }
 
-export function Preloader({ onComplete }: PreloaderProps) {
-  const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+export function Preloader({ onComplete, minDuration = 1400 }: PreloaderProps) {
+  const [visible, setVisible] = useState(true);
+  const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + Math.random() * 15;
-      });
-    }, 100);
+    const timer = setTimeout(() => {
+      setExiting(true);
+    }, minDuration);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearTimeout(timer);
+  }, [minDuration]);
 
   useEffect(() => {
-    if (progress >= 100) {
-      setTimeout(() => {
-        setIsVisible(false);
-        onComplete?.();
-      }, 300);
-    }
-  }, [progress, onComplete]);
+    if (!exiting) return;
 
-  if (!isVisible) return null;
+    const exitTimer = setTimeout(() => {
+      setVisible(false);
+      onComplete?.();
+    }, 450);
+
+    return () => clearTimeout(exitTimer);
+  }, [exiting, onComplete]);
+
+  if (!visible) return null;
 
   return (
-    <>
-      <style>{zoomAnimation}</style>
+    <div
+      aria-hidden="true"
+      className={`
+        fixed inset-0 z-50 flex items-center justify-center
+        bg-[#0B0B14]
+        transition-opacity duration-450 ease-out
+        ${exiting ? "opacity-0" : "opacity-100"}
+      `}
+    >
       <div
-        className={`fixed inset-0 z-9999 flex items-center justify-center bg-[#0D0A1A] transition-opacity duration-300 ${
-          progress >= 100 ? "opacity-0 pointer-events-none" : "opacity-100"
-        }`}
+        className={`
+          relative
+          transition-all duration-450 ease-[cubic-bezier(0.22,1,0.36,1)]
+          ${exiting ? "scale-95 opacity-0" : "scale-100 opacity-100"}
+        `}
       >
-        <div className="flex flex-col items-center gap-8">
-          {/* Logo with pulse animation */}
-          <div className="relative">
-            <div className="absolute inset-0 rounded-full bg-[#8B5CF6]/20 blur-xl animate-pulse" />
-            <div className="relative h-20 w-20 rounded-full bg-[#8B5CF6]/10 flex items-center justify-center border border-[#8B5CF6]/30">
-              <Image
-                src="/images/logo-icon.jpg"
-                alt="MEMBO"
-                width={48}
-                height={48}
-                className="h-12 w-12 rounded-full object-cover animate-zoom"
-                priority
-              />
-            </div>
-          </div>
-
-          {/* Loading text */}
-          <div className="text-center">
-            <p className="font-serif text-2xl font-semibold text-white tracking-tight">
-              MEMBO
-            </p>
-            <p className="mt-2 text-sm text-[#AAA5BA]">
-              Loading your workspace...
-            </p>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] rounded-full transition-all duration-100 ease-out"
-              style={{ width: `${Math.min(progress, 100)}%` }}
-            />
-          </div>
-
-          {/* Percentage */}
-          <p className="text-xs text-white/40 font-mono">
-            {Math.round(Math.min(progress, 100))}%
-          </p>
+        {/* Animated logo, erases from the left, then reappears from the left, loop */}
+        <div className="logo-wipe">
+          <Image
+            src="/images/membo-t.png"
+            alt="MEMBO"
+            width={56}
+            height={56}
+            className="h-14 w-14 object-contain"
+            priority
+          />
         </div>
       </div>
-    </>
+
+      <style jsx>{`
+        .logo-wipe {
+          animation: logoWipe 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        }
+
+        @keyframes logoWipe {
+          /* Hold, fully visible */
+          0% {
+            clip-path: inset(0 0 0 0);
+          }
+          10% {
+            clip-path: inset(0 0 0 0);
+          }
+
+          /* Erase: sweep hides the logo starting from the left edge */
+          32% {
+            clip-path: inset(0 0 0 100%);
+          }
+
+          /* Hold, fully hidden */
+          40% {
+            clip-path: inset(0 0 0 100%);
+          }
+
+          /* Setup for reveal, still hidden, but expressed from the opposite side
+             so the next phase can sweep back in from the left */
+          52% {
+            clip-path: inset(0 100% 0 0);
+          }
+
+          /* Appear: sweep reveals the logo starting from the left edge */
+          76% {
+            clip-path: inset(0 0 0 0);
+          }
+
+          /* Hold, fully visible, before looping */
+          100% {
+            clip-path: inset(0 0 0 0);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .logo-wipe {
+            animation: none;
+            clip-path: inset(0 0 0 0);
+          }
+        }
+      `}</style>
+    </div>
   );
 }

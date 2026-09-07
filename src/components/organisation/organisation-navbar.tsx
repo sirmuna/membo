@@ -55,9 +55,7 @@ export function OrganisationNavbar({
           { id: "members", label: "Members & Roles", icon: "🔑" },
           { id: "settings", label: "Settings & Profile", icon: "⚙️" },
         ]
-      : [
-          { id: "groups", label: "My Groups", icon: "📂" },
-        ]),
+      : [{ id: "groups", label: "My Groups", icon: "📂" }]),
     { id: "notifications", label: "Notifications", icon: "🔔" },
   ];
 
@@ -75,10 +73,10 @@ export function OrganisationNavbar({
   return (
     <>
       {/* Organization Header */}
-      <div className="border-b border-[var(--border)] bg-[var(--surface)] p-4 md:p-6">
+      <div className="border-b border-(--border) bg-(--surface)] p-4 md:p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] text-white flex items-center justify-center font-black text-lg shrink-0 shadow-md">
+            <div className="h-12 w-12 rounded-lg bg-linear-to-br from-(--primary) to-(--primary-dark) text-white flex items-center justify-center font-black text-lg shrink-0 shadow-md">
               {organisation?.name
                 ? organisation.name
                     .split(" ")
@@ -89,10 +87,10 @@ export function OrganisationNavbar({
                 : "MEM"}
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-bold text-[var(--foreground)] truncate">
+              <h1 className="text-xl md:text-2xl font-bold text-(--foreground) truncate">
                 {organisation?.name}
               </h1>
-              <p className="text-xs text-[var(--muted)] font-mono">
+              <p className="text-xs text-(--muted) font-mono">
                 slug: {organisation?.slug}
               </p>
             </div>
@@ -101,7 +99,7 @@ export function OrganisationNavbar({
           <div className="flex items-center gap-3">
             <Link
               href="/dashboard"
-              className="text-sm text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+              className="text-sm text-(--muted) hover:text-(--foreground) transition-colors"
             >
               ← Back to Dashboard
             </Link>
@@ -120,7 +118,7 @@ export function OrganisationNavbar({
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-[var(--border)] bg-[var(--surface)]">
+      <div className="border-b border-(--border) bg-(--surface)">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <nav className="flex gap-1 overflow-x-auto py-2">
             {tabs.map((tab) => {
@@ -158,8 +156,8 @@ export function OrganisationNavbar({
                   className={[
                     "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap",
                     isActive
-                      ? "bg-[var(--primary)]/10 text-[var(--primary)]"
-                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-(--background)",
+                      ? "bg-(--primary)/10 text-(--primary)"
+                      : "text-(--muted) hover:text-(--foreground) hover:bg-(--background)",
                   ].join(" ")}
                 >
                   <span>{tab.icon}</span>

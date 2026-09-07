@@ -36,12 +36,23 @@ export default async function OrganizationsPage() {
 
   const memberCounts = await Promise.all(
     orgIds.map(async (orgId: string) => {
-      const { count } = await supabase
+      const { count: peopleCount } = await supabase
+        .from("people")
+        .select("*", { count: "exact", head: true })
+        .eq("organisation_id", orgId)
+        .eq("status", "active");
+
+      if (peopleCount !== null && peopleCount !== undefined && peopleCount > 0) {
+        return { orgId, count: peopleCount };
+      }
+
+      const { count: membershipCount } = await supabase
         .from("organisation_memberships")
         .select("*", { count: "exact", head: true })
         .eq("organisation_id", orgId)
         .eq("status", "active");
-      return { orgId, count: count || 0 };
+
+      return { orgId, count: membershipCount || 0 };
     }),
   );
 
