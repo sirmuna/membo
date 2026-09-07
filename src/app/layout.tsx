@@ -37,7 +37,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               (function() {
                 const theme = localStorage.getItem('theme');
                 const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (theme === 'dark' || (!theme && systemPrefersDark)) {
+                
+                let shouldUseDark = false;
+                
+                if (theme === 'dark') {
+                  shouldUseDark = true;
+                } else if (theme === 'light') {
+                  shouldUseDark = false;
+                } else if (theme === 'system' || !theme) {
+                  shouldUseDark = systemPrefersDark;
+                }
+                
+                if (shouldUseDark) {
                   document.documentElement.classList.add('dark');
                 } else {
                   document.documentElement.classList.remove('dark');

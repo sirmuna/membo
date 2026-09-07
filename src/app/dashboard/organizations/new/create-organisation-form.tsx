@@ -52,7 +52,7 @@ export default function CreateOrganisationForm() {
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
-            placeholder="Example Community"
+            placeholder="United Nations"
             className="w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2.5 text-(--foreground) placeholder-(--muted) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all"
           />
         </div>
@@ -74,7 +74,7 @@ export default function CreateOrganisationForm() {
               )
             }
             required
-            placeholder="example-community"
+            placeholder="united-nations"
             className="w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2.5 text-(--foreground) placeholder-(--muted) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all"
           />
           <p className="mt-2 text-sm text-(--muted)">
@@ -95,7 +95,7 @@ export default function CreateOrganisationForm() {
             type="text"
             value={orgType}
             onChange={(event) => setOrgType(event.target.value)}
-            placeholder="Church, school, company, association..."
+            placeholder="E.g: Church, school, company, association..."
             className="w-full rounded-lg border border-(--border) bg-(--background) px-4 py-2.5 text-(--foreground) placeholder-(--muted) focus:border-(--primary) focus:ring-2 focus:ring-(--primary)/20 outline-none transition-all"
           />
         </div>

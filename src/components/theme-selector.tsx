@@ -104,7 +104,7 @@ export function ThemeSelector() {
                   "p-2 rounded-lg",
                   theme === t.value
                     ? "bg-[var(--primary)]/20 text-[var(--primary)]"
-                    : "bg-(--background) text-[var(--muted)]",
+                    : "bg-[var(--background)] text-[var(--muted)]",
                 ].join(" ")}
               >
                 {t.icon}
